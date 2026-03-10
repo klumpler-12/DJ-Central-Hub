@@ -20,7 +20,8 @@
     "express": "^5.2.1",
     "fast-xml-parser": "^5.4.2",
     "multer": "^2.1.1",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "soundcloud-scraper": "^5.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

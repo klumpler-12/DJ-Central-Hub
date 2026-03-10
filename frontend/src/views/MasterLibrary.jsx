@@ -88,6 +88,12 @@ export default function MasterLibrary() {
             />
           </label>
           <button 
+            onClick={() => syncPlatforms('mixcloud')}
+            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
+          >
+            <Play className="w-4 h-4" /> Sync Mixcloud
+          </button>
+          <button 
             onClick={() => syncPlatforms('soundcloud')}
             className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
           >

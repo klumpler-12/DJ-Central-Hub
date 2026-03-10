@@ -49,13 +49,13 @@ app.post('/api/sync/traktor', upload.single('nml'), async (req, res) => {
 });
 
 app.post('/api/sync/soundcloud', async (req, res) => {
-    syncSoundcloudSets().catch(console.error);
-    res.json({ message: 'SoundCloud sync started' });
+    await syncSoundcloudSets().catch(console.error);
+    res.json({ message: 'SoundCloud sync finished' });
 });
 
 app.post('/api/sync/mixcloud', async (req, res) => {
-    syncMixcloudSets().catch(console.error);
-    res.json({ message: 'Mixcloud sync started' });
+    await syncMixcloudSets().catch(console.error);
+    res.json({ message: 'Mixcloud sync finished' });
 });
 
 import { initializeDatabase } from './initDb.js';

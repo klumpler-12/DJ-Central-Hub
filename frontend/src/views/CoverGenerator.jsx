@@ -34,72 +34,104 @@ export default function CoverGenerator() {
       };
       img.src = background;
     } else {
-      ctx.fillStyle = '#0f172a';
+      // Dynamic Gradient Background (Light top-left to Dark bottom-right)
+      const bgGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      bgGradient.addColorStop(0, '#f8fafc'); // Almost white
+      
+      // Use the genre color, but darkened for the bottom right
+      const hex2rgb = (hex) => {
+          const r = parseInt(hex.slice(1, 3), 16);
+          const g = parseInt(hex.slice(3, 5), 16);
+          const b = parseInt(hex.slice(5, 7), 16);
+          return {r, g, b};
+      };
+      const c = genreColor.startsWith('#') ? hex2rgb(genreColor) : {r:50, g:0, b:20};
+      
+      bgGradient.addColorStop(0.5, `rgba(${c.r}, ${c.g}, ${c.b}, 0.5)`);
+      bgGradient.addColorStop(1, `rgba(${Math.max(0, c.r-100)}, ${Math.max(0, c.g-100)}, ${Math.max(0, c.b-100)}, 1)`);
+      
+      ctx.fillStyle = bgGradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
       drawOverlays(ctx, canvas);
     }
   };
 
   const drawOverlays = (ctx, canvas) => {
-    // 1. Dynamic Genre Color Gradient Overlay (Top to bottom)
-    const baseGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    baseGradient.addColorStop(0, 'transparent');
-    baseGradient.addColorStop(0.3, 'rgba(0,0,0,0.4)');
-    baseGradient.addColorStop(0.8, 'rgba(0,0,0,0.9)');
-    baseGradient.addColorStop(1, '#000000');
-    
-    ctx.fillStyle = baseGradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // 2. High Quality Glow instead of text shadow
-    // Use a radial gradient behind the text
-    const cx = canvas.width / 2;
-    const cy = canvas.height - 100;
-    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 500);
-    
-    // Hex to RGB for transparency
-    const hex2rgb = (hex) => {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return `${r},${g},${b}`;
-    };
-    
-    const rgbColor = genreColor.startsWith('#') ? hex2rgb(genreColor) : '255,255,255';
-    
-    glow.addColorStop(0, `rgba(${rgbColor}, 0.5)`);
-    glow.addColorStop(0.5, `rgba(${rgbColor}, 0.1)`);
-    glow.addColorStop(1, 'transparent');
-    
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, canvas.height - 600, canvas.width, 600);
-
-    // Title
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 90px "Helvetica Neue", Helvetica, Arial, sans-serif';
+    // Large "A" watermark from the referenced Logo
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2 - 50);
+    // Slight skew
+    ctx.transform(1, 0, -0.2, 1, 0, 0);
+    ctx.fillStyle = 'rgba(20, 5, 10, 0.8)';
+    ctx.font = 'bold 1200px "Times New Roman", Times, serif';
     ctx.textAlign = 'center';
-    ctx.fillText(title.toUpperCase(), canvas.width / 2, canvas.height - 220);
+    ctx.textBaseline = 'middle';
+    ctx.fillText("A", 0, 0);
     
-    // Subtitle (DJ NAME)
-    ctx.fillStyle = '#e2e8f0'; 
-    ctx.font = '500 35px "Helvetica Neue", Helvetica, Arial, sans-serif';
-    ctx.letterSpacing = '12px'; // Note: letterSpacing works in newer browsers on canvas
-    ctx.fillText(subtitle.toUpperCase(), canvas.width / 2, canvas.height - 140);
-
-    // Set Type Pillar (e.g. B2B, ASMR)
-    ctx.fillStyle = genreColor; 
-    ctx.font = 'bold 45px "Helvetica Neue", Helvetica, Arial, sans-serif';
-    ctx.fillText(setType.toUpperCase(), canvas.width / 2, canvas.height - 80);
+    // Slicing effect for 'A' crossbar (like the reference)
+    ctx.fillStyle = 'rgba(20, 5, 10, 0.8)';
+    // We already skew'd, we can draw a massive thick bar
+    ctx.fillRect(-600, 50, 1200, 120);
+    ctx.restore();
 
     // Top Right Corner badge for Set Number
     if (setNum) {
       ctx.fillStyle = genreColor;
-      ctx.fillRect(canvas.width - 250, 40, 210, 80);
+      ctx.fillRect(canvas.width - 250, 40, 210, 100);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 35px "Helvetica Neue", Helvetica, Arial, sans-serif';
+      ctx.font = 'bold 45px "Times New Roman", Times, serif';
       ctx.textAlign = 'center';
-      ctx.fillText(setNum.toUpperCase(), canvas.width - 145, 93);
+      ctx.letterSpacing = '5px';
+      ctx.fillText(setNum.toUpperCase(), canvas.width - 145, 103);
+      ctx.letterSpacing = '0px'; // reset
     }
+
+    // Bottom Content Alignment
+    const bottomY = canvas.height - 100;
+
+    // Title (e.g. SUMMER SET)
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 110px "Times New Roman", Times, serif';
+    ctx.textAlign = 'center';
+    ctx.letterSpacing = '10px';
+    ctx.fillText(title.toUpperCase(), canvas.width / 2, bottomY - 140);
+    
+    // Subtitle (DJ NAME) (White overlaid on a slight red offset for that "b2b" mirroring effect)
+    // Actually, in the reference, the DJ name is just white with wide tracking.
+    ctx.fillStyle = '#f8fafc'; 
+    ctx.font = '400 45px "Times New Roman", Times, serif';
+    ctx.letterSpacing = '20px';
+    ctx.fillText(subtitle.toUpperCase(), canvas.width / 2, bottomY - 60);
+
+    // Set Type Pillar (e.g. B2B) - Chromatic Aberration
+    ctx.font = 'bold 65px "Times New Roman", Times, serif';
+    ctx.letterSpacing = '10px';
+    const textStr = setType.toUpperCase();
+    const cx = canvas.width / 2;
+    const cy = bottomY + 20;
+
+    // Chromatic Aberration Pass 1: Red (shifted left)
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+    ctx.fillText(textStr, cx - 4, cy);
+    
+    // Chromatic Aberration Pass 2: Cyan (shifted right)
+    ctx.fillStyle = 'rgba(0, 255, 255, 0.7)';
+    ctx.fillText(textStr, cx + 4, cy);
+    
+    // Slice Effect (Horizontal line cuts)
+    // we do this by drawing the text shifted, then clipping?
+    // Or just draw the base text:
+    ctx.fillStyle = genreColor; 
+    ctx.fillText(textStr, cx, cy);
+
+    // Apply some horizontal artifact lines across the SetType for the "trippy" feel
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(cx - 300, cy - 35, 600, 3);
+    ctx.fillRect(cx - 300, cy - 20, 600, 2);
+    ctx.fillRect(cx - 300, cy - 5, 600, 4);
+
+    ctx.letterSpacing = '0px'; // reset
   };
 
   const handleImageUpload = (e) => {
