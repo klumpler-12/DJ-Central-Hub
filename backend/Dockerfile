@@ -1,5 +1,7 @@
 FROM node:20-alpine
 
+RUN apk add --no-cache wget
+
 WORKDIR /app
 
 COPY package.json ./
@@ -9,4 +11,4 @@ COPY . .
 
 EXPOSE 5000
 
-CMD ["npx", "nodemon", "src/server.js"]
+CMD ["node", "src/server.js"]
