@@ -12,6 +12,13 @@ import { syncTraktorNML } from './traktorSync.js';
 import { syncSoundcloudSets } from './scrapers/soundcloud.js';
 import { syncMixcloudSets } from './scrapers/mixcloud.js';
 
+// Sync status tracking
+export const syncStatus = {
+    traktor: { status: 'idle', last_sync: null, message: '', progress: 0 },
+    soundcloud: { status: 'idle', last_sync: null, message: '', progress: 0 },
+    mixcloud: { status: 'idle', last_sync: null, message: '', progress: 0 }
+};
+
 app.get('/api/health', async (req, res) => {
     try {
         const result = await query('SELECT NOW()');
@@ -43,19 +50,53 @@ app.post('/api/sync/traktor', upload.single('nml'), async (req, res) => {
     }
     const xmlData = req.file.buffer.toString('utf8');
     
-    // Fire and forget, or wait
-    syncTraktorNML(xmlData).catch(console.error);
-    res.json({ message: 'Traktor sync started from uploaded file' });
+    syncStatus.traktor = { status: 'syncing', last_sync: new Date(), message: 'Processing NML file...', progress: 10 };
+    
+    syncTraktorNML(xmlData)
+        .then(() => {
+            syncStatus.traktor = { status: 'completed', last_sync: new Date(), message: 'Traktor sync complete.', progress: 100 };
+        })
+        .catch(err => {
+            syncStatus.traktor = { status: 'error', last_sync: new Date(), message: err.message, progress: 0 };
+        });
+
+    res.json({ message: 'Traktor sync started' });
 });
 
 app.post('/api/sync/soundcloud', async (req, res) => {
-    await syncSoundcloudSets().catch(console.error);
-    res.json({ message: 'SoundCloud sync finished' });
+    syncStatus.soundcloud = { status: 'syncing', last_sync: new Date(), message: 'Connecting to SoundCloud...', progress: 10 };
+    
+    syncSoundcloudSets()
+        .then(result => {
+             if (result && result.success === false) {
+                 syncStatus.soundcloud = { status: 'error', last_sync: new Date(), message: result.message, progress: 0 };
+             } else {
+                 syncStatus.soundcloud = { status: 'completed', last_sync: new Date(), message: 'SoundCloud sync complete.', progress: 100 };
+             }
+        })
+        .catch(err => {
+            syncStatus.soundcloud = { status: 'error', last_sync: new Date(), message: err.message, progress: 0 };
+        });
+        
+    res.json({ message: 'SoundCloud sync started' });
 });
 
 app.post('/api/sync/mixcloud', async (req, res) => {
-    await syncMixcloudSets().catch(console.error);
-    res.json({ message: 'Mixcloud sync finished' });
+    syncStatus.mixcloud = { status: 'syncing', last_sync: new Date(), message: 'Fetching Mixcloud data...', progress: 10 };
+    
+    syncMixcloudSets()
+        .then(() => {
+            syncStatus.mixcloud = { status: 'completed', last_sync: new Date(), message: 'Mixcloud sync complete.', progress: 100 };
+        })
+        .catch(err => {
+            syncStatus.mixcloud = { status: 'error', last_sync: new Date(), message: err.message, progress: 0 };
+        });
+
+    res.json({ message: 'Mixcloud sync started' });
+});
+
+app.get('/api/sync/status', (req, res) => {
+    res.json(syncStatus);
 });
 
 import { initializeDatabase } from './initDb.js';

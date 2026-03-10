@@ -34,21 +34,19 @@ export default function CoverGenerator() {
       };
       img.src = background;
     } else {
-      // Dynamic Gradient Background (Light top-left to Dark bottom-right)
-      const bgGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      bgGradient.addColorStop(0, '#f8fafc'); // Almost white
+      // Dynamic Gradient Background (Light top to dark bottom, using genreColor)
+      const bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      bgGradient.addColorStop(0, '#1e293b'); // Dark slate top
       
-      // Use the genre color, but darkened for the bottom right
       const hex2rgb = (hex) => {
           const r = parseInt(hex.slice(1, 3), 16);
           const g = parseInt(hex.slice(3, 5), 16);
           const b = parseInt(hex.slice(5, 7), 16);
           return {r, g, b};
       };
-      const c = genreColor.startsWith('#') ? hex2rgb(genreColor) : {r:50, g:0, b:20};
+      const c = genreColor.startsWith('#') ? hex2rgb(genreColor) : {r:15, g:23, b:42};
       
-      bgGradient.addColorStop(0.5, `rgba(${c.r}, ${c.g}, ${c.b}, 0.5)`);
-      bgGradient.addColorStop(1, `rgba(${Math.max(0, c.r-100)}, ${Math.max(0, c.g-100)}, ${Math.max(0, c.b-100)}, 1)`);
+      bgGradient.addColorStop(1, `rgba(${c.r}, ${c.g}, ${c.b}, 1)`);
       
       ctx.fillStyle = bgGradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -58,79 +56,45 @@ export default function CoverGenerator() {
   };
 
   const drawOverlays = (ctx, canvas) => {
-    // Large "A" watermark from the referenced Logo
-    ctx.save();
-    ctx.translate(canvas.width / 2, canvas.height / 2 - 50);
-    // Slight skew
-    ctx.transform(1, 0, -0.2, 1, 0, 0);
-    ctx.fillStyle = 'rgba(20, 5, 10, 0.8)';
-    ctx.font = 'bold 1200px "Times New Roman", Times, serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText("A", 0, 0);
-    
-    // Slicing effect for 'A' crossbar (like the reference)
-    ctx.fillStyle = 'rgba(20, 5, 10, 0.8)';
-    // We already skew'd, we can draw a massive thick bar
-    ctx.fillRect(-600, 50, 1200, 120);
-    ctx.restore();
+    // Add a solid border container design around the edges
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 15;
+    ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
 
     // Top Right Corner badge for Set Number
     if (setNum) {
       ctx.fillStyle = genreColor;
-      ctx.fillRect(canvas.width - 250, 40, 210, 100);
+      ctx.fillRect(canvas.width - 320, 40, 280, 80);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 45px "Times New Roman", Times, serif';
+      ctx.font = 'bold 36px "Helvetica Neue", Helvetica, Arial, sans-serif';
       ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       ctx.letterSpacing = '5px';
-      ctx.fillText(setNum.toUpperCase(), canvas.width - 145, 103);
+      ctx.fillText(setNum.toUpperCase(), canvas.width - 180, 83);
       ctx.letterSpacing = '0px'; // reset
     }
 
     // Bottom Content Alignment
-    const bottomY = canvas.height - 100;
+    const bottomY = canvas.height - 180;
 
     // Title (e.g. SUMMER SET)
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 110px "Times New Roman", Times, serif';
+    ctx.font = '900 120px "Helvetica Neue", Helvetica, Arial, sans-serif';
     ctx.textAlign = 'center';
+    ctx.letterSpacing = '2px';
+    ctx.fillText(title.toUpperCase(), canvas.width / 2, bottomY - 120);
+    
+    // Subtitle (DJ NAME)
+    ctx.fillStyle = '#94a3b8'; // slate-400
+    ctx.font = '600 40px "Helvetica Neue", Helvetica, Arial, sans-serif';
+    ctx.letterSpacing = '18px';
+    ctx.fillText(subtitle.toUpperCase(), canvas.width / 2, bottomY - 40);
+
+    // Set Type Pillar (e.g. B2B)
+    ctx.fillStyle = genreColor;
+    ctx.font = '800 60px "Helvetica Neue", Helvetica, Arial, sans-serif';
     ctx.letterSpacing = '10px';
-    ctx.fillText(title.toUpperCase(), canvas.width / 2, bottomY - 140);
-    
-    // Subtitle (DJ NAME) (White overlaid on a slight red offset for that "b2b" mirroring effect)
-    // Actually, in the reference, the DJ name is just white with wide tracking.
-    ctx.fillStyle = '#f8fafc'; 
-    ctx.font = '400 45px "Times New Roman", Times, serif';
-    ctx.letterSpacing = '20px';
-    ctx.fillText(subtitle.toUpperCase(), canvas.width / 2, bottomY - 60);
-
-    // Set Type Pillar (e.g. B2B) - Chromatic Aberration
-    ctx.font = 'bold 65px "Times New Roman", Times, serif';
-    ctx.letterSpacing = '10px';
-    const textStr = setType.toUpperCase();
-    const cx = canvas.width / 2;
-    const cy = bottomY + 20;
-
-    // Chromatic Aberration Pass 1: Red (shifted left)
-    ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
-    ctx.fillText(textStr, cx - 4, cy);
-    
-    // Chromatic Aberration Pass 2: Cyan (shifted right)
-    ctx.fillStyle = 'rgba(0, 255, 255, 0.7)';
-    ctx.fillText(textStr, cx + 4, cy);
-    
-    // Slice Effect (Horizontal line cuts)
-    // we do this by drawing the text shifted, then clipping?
-    // Or just draw the base text:
-    ctx.fillStyle = genreColor; 
-    ctx.fillText(textStr, cx, cy);
-
-    // Apply some horizontal artifact lines across the SetType for the "trippy" feel
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(cx - 300, cy - 35, 600, 3);
-    ctx.fillRect(cx - 300, cy - 20, 600, 2);
-    ctx.fillRect(cx - 300, cy - 5, 600, 4);
-
+    ctx.fillText(setType.toUpperCase(), canvas.width / 2, bottomY + 60);
     ctx.letterSpacing = '0px'; // reset
   };
 

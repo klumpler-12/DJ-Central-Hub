@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { XMLParser } from 'fast-xml-parser';
 import { query } from './db.js';
+import { syncStatus } from './server.js';
 
 export async function syncTraktorNML(xmlData) {
     console.log(`Starting Traktor NML Sync from uploaded file buffer...`);
@@ -22,8 +23,16 @@ export async function syncTraktorNML(xmlData) {
 
     const entries = Array.isArray(collection) ? collection : [collection];
     console.log(`Found ${entries.length} tracks in uploaded NML.`);
+    const totalEntries = entries.length;
 
-    for (const entry of entries) {
+    for (let i = 0; i < entries.length; i++) {
+        const entry = entries[i];
+        
+        // Update progress every 10% or so
+        if (i % Math.ceil(totalEntries / 10) === 0) {
+            syncStatus.traktor.progress = Math.round(10 + (i / totalEntries) * 85);
+            syncStatus.traktor.message = `Processing track ${i + 1} of ${totalEntries}...`;
+        }
         const title = entry['@_TITLE'] || '';
         const artist = entry['@_ARTIST'] || '';
         
