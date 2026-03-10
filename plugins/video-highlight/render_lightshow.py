@@ -3,10 +3,10 @@ import os
 import sys
 
 # To run headless:
-# blender -b -P render_lightshow.py -- /path/to/audio/clip.mp3 /path/to/output.mp4
+# blender -b -P render_lightshow.py -- /path/to/audio/clip.mp3 /path/to/output.mp4 [--preview]
 
-def setup_scene(audio_path, output_path):
-    print(f"Setting up Blender Lightshow with audio: {audio_path}")
+def setup_scene(audio_path, output_path, is_preview=False):
+    print(f"Setting up Blender Lightshow with audio: {audio_path} (Preview: {is_preview})")
     
     # 1. Clear default cube
     bpy.ops.object.select_all(action='DESELECT')
@@ -20,6 +20,13 @@ def setup_scene(audio_path, output_path):
     # Frame rate = 30fps
     scene.render.fps = 30
 
+    if is_preview:
+        scene.cycles.samples = 16
+        scene.render.resolution_percentage = 25
+    else:
+        scene.cycles.samples = 128
+        scene.render.resolution_percentage = 100
+
     # 2. Add Audio to VSE (Video Sequence Editor)
     if not scene.sequence_editor:
         scene.sequence_editor_create()
@@ -31,12 +38,14 @@ def setup_scene(audio_path, output_path):
         frame_start=1
     )
     
-    # Set end frame based on audio length
-    scene.frame_end = sound_strip.frame_duration
+    # Set end frame based on audio length. For preview, limit to 5 seconds (150 frames)
+    total_frames = sound_strip.frame_duration
+    scene.frame_end = min(150, total_frames) if is_preview else total_frames
 
     # 3. Create a dynamic light
     bpy.ops.object.light_add(type='SPOT', location=(0, 0, 5))
     light = bpy.context.active_object
+    light.name = "BassLight"
     light.data.energy = 0 # base energy
     light.data.spot_size = 1.5
     light.data.color = (1.0, 0.2, 0.5) # pinkish trippy
@@ -67,7 +76,52 @@ def setup_scene(audio_path, output_path):
     # 5. Add a simple plane floor to receive the light
     bpy.ops.mesh.primitive_plane_add(size=20, location=(0, 0, 0))
 
-    # 6. Render Settings
+    # 6. Compositing: Chromatic Aberration (Trippy Bass Effect)
+    scene.use_nodes = True
+    tree = scene.node_tree
+    
+    # Clear default nodes
+    for node in tree.nodes:
+        tree.nodes.remove(node)
+
+    # Add Nodes
+    render_layers = tree.nodes.new(type='CompositorNodeRLayers')
+    render_layers.location = (0, 0)
+
+    lens_distortion = tree.nodes.new(type='CompositorNodeLensdist')
+    lens_distortion.location = (300, 0)
+    # Fit ensures the edges don't show blank areas when distorted
+    lens_distortion.use_fit = True 
+    lens_distortion.inputs["Distort"].default_value = 0.0 # Keep actual distortion at 0 so border isn't skewed
+
+    composite = tree.nodes.new(type='CompositorNodeComposite')
+    composite.location = (600, 0)
+
+    # Link nodes
+    tree.links.new(render_layers.outputs['Image'], lens_distortion.inputs['Image'])
+    tree.links.new(lens_distortion.outputs['Image'], composite.inputs['Image'])
+
+    # Drive Dispersion with the light's energy
+    # We create a driver on the Dispersion input to be = BassLight Energy / 100000
+    # Peak energy is 5000, so 5000/100000 = 0.05 max dispersion (subtle but noticeable chromatic aberration)
+    dispersion_input = lens_distortion.inputs["Dispersion"]
+    driver_fcurve = dispersion_input.driver_add("default_value")
+    
+    driver = driver_fcurve.driver
+    driver.type = 'SCRIPTED'
+    
+    var = driver.variables.new()
+    var.name = "energy_val"
+    var.type = 'SINGLE_PROP'
+    
+    target = var.targets[0]
+    target.id_type = 'LIGHT'
+    target.id = light.data
+    target.data_path = 'energy'
+    
+    driver.expression = "energy_val / 100000.0"
+
+    # 7. Render Settings
     scene.render.filepath = output_path
     scene.render.image_settings.file_format = 'FFMPEG'
     scene.render.ffmpeg.format = 'MPEG4'
@@ -85,6 +139,9 @@ if __name__ == "__main__":
     if "--" in sys.argv:
         args = sys.argv[sys.argv.index("--") + 1:]
         if len(args) >= 2:
-            setup_scene(args[0], args[1])
+            audio_in = args[0]
+            video_out = args[1]
+            is_preview = "--preview" in args
+            setup_scene(audio_in, video_out, is_preview)
         else:
-            print("Usage: blender -b -P render_lightshow.py -- <audio_in.mp3> <video_out.mp4>")
+            print("Usage: blender -b -P render_lightshow.py -- <audio_in.mp3> <video_out.mp4> [--preview]")
