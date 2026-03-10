@@ -24,6 +24,7 @@ services:
       - "5000:5000"
     volumes:
       - ./backend:/app
+      - /app/node_modules
       - /Users/patrickwisniewski/Dokumente/DJ Rick/Playlists:/playlists:ro
     environment:
       - DB_HOST=db
@@ -45,6 +46,7 @@ services:
       - "5174:5174"
     volumes:
       - ./frontend:/app
+      - /app/node_modules
     environment:
       - VITE_API_URL=http://192.168.178.81:5000
     depends_on:
