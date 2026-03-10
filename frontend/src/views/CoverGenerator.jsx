@@ -44,45 +44,59 @@ export default function CoverGenerator() {
     // 1. Dynamic Genre Color Gradient Overlay (Top to bottom)
     const baseGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     baseGradient.addColorStop(0, 'transparent');
-    baseGradient.addColorStop(0.3, 'rgba(0,0,0,0.2)');
-    baseGradient.addColorStop(0.8, 'rgba(0,0,0,0.85)');
+    baseGradient.addColorStop(0.3, 'rgba(0,0,0,0.4)');
+    baseGradient.addColorStop(0.8, 'rgba(0,0,0,0.9)');
     baseGradient.addColorStop(1, '#000000');
     
     ctx.fillStyle = baseGradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Color Splash / Shadow matching genreColor at the bottom
-    ctx.shadowColor = genreColor;
-    ctx.shadowBlur = 100;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 20;
+    // 2. High Quality Glow instead of text shadow
+    // Use a radial gradient behind the text
+    const cx = canvas.width / 2;
+    const cy = canvas.height - 100;
+    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 500);
+    
+    // Hex to RGB for transparency
+    const hex2rgb = (hex) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `${r},${g},${b}`;
+    };
+    
+    const rgbColor = genreColor.startsWith('#') ? hex2rgb(genreColor) : '255,255,255';
+    
+    glow.addColorStop(0, `rgba(${rgbColor}, 0.5)`);
+    glow.addColorStop(0.5, `rgba(${rgbColor}, 0.1)`);
+    glow.addColorStop(1, 'transparent');
+    
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, canvas.height - 600, canvas.width, 600);
 
     // Title
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 80px Inter';
+    ctx.font = 'bold 90px "Helvetica Neue", Helvetica, Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(title.toUpperCase(), canvas.width / 2, canvas.height - 200);
+    ctx.fillText(title.toUpperCase(), canvas.width / 2, canvas.height - 220);
     
-    // Reset shadow for crisp text
-    ctx.shadowBlur = 0;
-
     // Subtitle (DJ NAME)
-    ctx.fillStyle = '#cbd5e1'; // slate-300
-    ctx.font = '500 35px Inter';
-    ctx.letterSpacing = '10px';
-    ctx.fillText(subtitle.toUpperCase(), canvas.width / 2, canvas.height - 130);
+    ctx.fillStyle = '#e2e8f0'; 
+    ctx.font = '500 35px "Helvetica Neue", Helvetica, Arial, sans-serif';
+    ctx.letterSpacing = '12px'; // Note: letterSpacing works in newer browsers on canvas
+    ctx.fillText(subtitle.toUpperCase(), canvas.width / 2, canvas.height - 140);
 
     // Set Type Pillar (e.g. B2B, ASMR)
     ctx.fillStyle = genreColor; 
-    ctx.font = 'bold 45px Inter';
-    ctx.fillText(setType.toUpperCase(), canvas.width / 2, canvas.height - 70);
+    ctx.font = 'bold 45px "Helvetica Neue", Helvetica, Arial, sans-serif';
+    ctx.fillText(setType.toUpperCase(), canvas.width / 2, canvas.height - 80);
 
     // Top Right Corner badge for Set Number
     if (setNum) {
       ctx.fillStyle = genreColor;
       ctx.fillRect(canvas.width - 250, 40, 210, 80);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 35px Inter';
+      ctx.font = 'bold 35px "Helvetica Neue", Helvetica, Arial, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(setNum.toUpperCase(), canvas.width - 145, 93);
     }

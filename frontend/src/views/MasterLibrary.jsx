@@ -23,9 +23,29 @@ export default function MasterLibrary() {
     }
   };
 
-  const syncTraktor = async () => {
-    await axios.post('http://192.168.178.81:5000/api/sync/traktor');
-    alert('Traktor sync triggered');
+  const [syncingFile, setSyncingFile] = useState(false);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setSyncingFile(true);
+    const formData = new FormData();
+    formData.append('nml', file);
+
+    try {
+      await axios.post('http://192.168.178.81:5000/api/sync/traktor', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      alert('Traktor sync triggered! Check logs and refresh in a moment.');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to upload NML file');
+    } finally {
+      setSyncingFile(false);
+      // Reset input
+      e.target.value = null;
+    }
   };
 
   const syncPlatforms = async (platform) => {
@@ -57,12 +77,16 @@ export default function MasterLibrary() {
           <p className="text-lg opacity-80 mt-2">All scanned tracks and metadata.</p>
         </div>
         <div className="flex gap-4">
-          <button 
-            onClick={syncTraktor}
-            className="bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg flex items-center gap-2 transition"
-          >
-            <DownloadCloud className="w-4 h-4" /> Sync Traktor
-          </button>
+          <label className={`bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg flex items-center gap-2 transition cursor-pointer ${syncingFile ? 'opacity-50' : ''}`}>
+            <DownloadCloud className="w-4 h-4" /> {syncingFile ? 'Uploading...' : 'Sync Traktor.nml'}
+            <input 
+              type="file" 
+              accept=".nml" 
+              className="hidden" 
+              onChange={handleFileUpload}
+              disabled={syncingFile}
+            />
+          </label>
           <button 
             onClick={() => syncPlatforms('soundcloud')}
             className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"

@@ -102,11 +102,23 @@ export default function VideoHighlight() {
       </div>
 
       <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl flex flex-col items-center justify-center p-8 text-center gap-4">
-        {status === "done" ? (
-           <div className="text-primary flex flex-col items-center gap-4">
-             <Film className="w-24 h-24 mb-4" />
-             <h2 className="text-2xl font-bold text-white">Render Sent to Mac!</h2>
-             <p className="text-slate-400">output_highlight.mp4 will be saved to your Assets once Blender finishes.</p>
+         {status === "done" ? (
+           <div className="text-primary flex flex-col items-center gap-4 w-full">
+             <Film className="w-16 h-16 mb-2" />
+             <h2 className="text-2xl font-bold text-white">Ready for your Mac!</h2>
+             <p className="text-slate-400">Since Blender must use your Mac's GPU, run this exact command in your Mac terminal:</p>
+             
+             <div className="w-full bg-black p-4 rounded-lg font-mono text-xs text-left text-green-400 overflow-x-auto border border-green-900 shadow-inner mt-2">
+               cd ~/Dokumente/Programmieren/DJ/DJ-Central-Hub/plugins/video-highlight && \<br/>
+               python3 extract.py \<br/>
+               &nbsp;&nbsp;--audio "{audioFile ? audioFile.name : 'YOUR_AUDIO_FILE.mp3'}" \<br/>
+               &nbsp;&nbsp;--start {startTime} \<br/>
+               &nbsp;&nbsp;--duration {duration} {isPreview ? '\\\n  --preview' : ''}
+             </div>
+             <p className="text-xs text-slate-500 mt-2 hover:text-white transition cursor-pointer" onClick={() => {
+                navigator.clipboard.writeText(`cd ~/Dokumente/Programmieren/DJ/DJ-Central-Hub/plugins/video-highlight && python3 extract.py --audio "${audioFile ? audioFile.name : 'YOUR_AUDIO_FILE.mp3'}" --start ${startTime} --duration ${duration} ${isPreview ? '--preview' : ''}`);
+                alert("Copied to clipboard!");
+             }}>Click here to copy command</p>
            </div>
         ) : (
           <>

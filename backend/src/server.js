@@ -32,10 +32,20 @@ app.get('/api/tracks', async (req, res) => {
     }
 });
 
-app.post('/api/sync/traktor', async (req, res) => {
-    // Fire and forget PoC
-    syncTraktorNML().catch(console.error);
-    res.json({ message: 'Traktor sync started' });
+import multer from 'multer';
+
+// Setup multer for memory storage
+const upload = multer({ storage: multer.memoryStorage() });
+
+app.post('/api/sync/traktor', upload.single('nml'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No NML file uploaded' });
+    }
+    const xmlData = req.file.buffer.toString('utf8');
+    
+    // Fire and forget, or wait
+    syncTraktorNML(xmlData).catch(console.error);
+    res.json({ message: 'Traktor sync started from uploaded file' });
 });
 
 app.post('/api/sync/soundcloud', async (req, res) => {
